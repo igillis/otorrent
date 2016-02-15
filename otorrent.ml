@@ -1,4 +1,5 @@
 open Core.Std;;
+open Async.Std;;
 
 let sha1_encode str =
   let open Cryptokit in
@@ -19,44 +20,33 @@ in
 
 let build_tracker_query response =
   match extract_info response with
-  | None -> Error "Failed to extract info\n"
+  | None -> Error "Failed to extract info\n\n"
   | Some info ->
     let info_hash = sha1_encode info in
-    print_string ("INFO_HASH: " ^ (Cryptokit.transform_string (Cryptokit.Hexa.encode ()) info_hash) ^ "\n");
+    print_string ("INFO_HASH: " ^ (Cryptokit.transform_string (Cryptokit.Hexa.encode ()) info_hash) ^ "\n\n");
     match extract_tracker_url response with
-    | None -> Error "Failed to extract tracker url\n"
+    | None -> Error "Failed to extract tracker url\n\n"
     | Some tracker_url ->
-      print_string ("tracker url: " ^ tracker_url ^ "\n");
+      print_string ("tracker url: " ^ tracker_url ^ "\n\n");
       let tracker_uri = Uri.of_string tracker_url in
       Ok (Uri.add_query_param tracker_uri ("info_hash", [info_hash]))
 in
 
 let make_tracker_request tracker_url =
   let res = Bencode.decode (`File_path tracker_url) in
-  match build_tracker_query res with
-  | Error e ->
-      print_string ("error building tracker query: " ^ e ^ "\n");
-      (Error e)
-  | Ok tracker_query ->
-    print_string ("tracker query: " ^ (Uri.to_string tracker_query) ^ "\n");
-    (Ok tracker_query)
-    (* Cohttp_async.Client.get tracker_query *)
-    (* >>= fun (_, body) -> *)
-    (* Cohttp_async.Body.to_string body *)
-    (* >>| fun (body_string) -> *)
-    (*   Async.Std.print_string body_string; *)
-    (*   Ok body_string *)
+  build_tracker_query res
 in
 
 let _ = match (make_tracker_request "ataleoftwocities00098gut_archive.torrent") with
-| Error e -> print_string ("Error making tracker query: " ^ e ^ "\n")
-| Ok uri -> print_string ((Uri.to_string uri) ^ "\n")
-in ()
-  (* >>| fun (body) -> *)
-  (*   match body with *)
-  (*   | Error e -> Async.Std.print_string e *)
-  (*   | Ok s -> Async.Std.print_string s *)
-(* in *)
-  (* Async.Std.print_string "starting scheduler\n"; *)
-  (* Core.Std.never_returns (Scheduler.go ~raise_unhandled_exn:false ()) *)
+| Error e -> return (print_string ("Error making tracker query: " ^ e ^ "\n\n"))
+| Ok uri -> 
+    print_string ((Uri.to_string uri) ^ "\n\n");
+    Cohttp_async.Client.get uri
+    >>= fun (_, body) ->
+    Cohttp_async.Body.to_string body
+    >>| fun (body_string) ->
+      print_string ((Bencode.pretty_print (Bencode.decode (`String body_string))) ^ "\n\n")
+in
+  print_string "starting scheduler\n\n";
+  Core.Std.never_returns (Scheduler.go ~raise_unhandled_exn:false ())
 
