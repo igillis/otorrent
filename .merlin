@@ -1,0 +1,8 @@
+S .
+B _build
+PKG core
+PKG async
+PKG bencode
+PKG cryptokit
+PKG cohttp
+EXT nonrec
