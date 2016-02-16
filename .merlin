@@ -5,4 +5,5 @@ PKG async
 PKG bencode
 PKG cryptokit
 PKG cohttp
+PKG ipaddr
 EXT nonrec

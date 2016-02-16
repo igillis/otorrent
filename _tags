@@ -1,1 +1,1 @@
-true: package(bencode), package(cryptokit), package(cohttp.async), package(async), package(cohttp)
+true: package(bencode), package(cryptokit), package(cohttp.async), package(async), package(cohttp), package(ipaddr)
